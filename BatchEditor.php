@@ -14,16 +14,9 @@
 if (!defined('MEDIAWIKI'))
     die('Not an entry point');
 
-$wgExtensionFunctions[] = "wfInitBatchEditor";
 $wgExtensionMessagesFiles['BatchEditor'] = dirname(__FILE__) . '/BatchEditor.i18n.php';
 $wgSpecialPageGroups['BatchEditor'] = 'pagetools';
-
-function wfInitBatchEditor()
-{
-    global $IP;
-    require_once("$IP/includes/SpecialPage.php");
-    SpecialPage::addPage(new BatchEditorPage);
-}
+$wgSpecialPages['BatchEditor'] = 'BatchEditorPage';
 
 function wfSpecialBatchEditor($par = null)
 {
