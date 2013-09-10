@@ -174,12 +174,8 @@ function wfSpecialBatchEditor($par = null)
         {
             $s_title = trim($s_title);
             $title = Title::newFromText($s_title);
-            if (!$title)
+            if (!$title || !$title->userCanRead())
                 continue;
-/*patch|2011-03-01|IntraACL|start*/
-            if (method_exists($title, 'userCanReadEx') && !$title->userCanReadEx())
-                continue;
-/*patch|2011-03-01|IntraACL|end*/
             $article = new Article($title);
             $oldtext = '';
             if ($article->exists())
@@ -263,6 +259,5 @@ class BatchEditorPage extends SpecialPage
     function BatchEditorPage()
     {
         SpecialPage::SpecialPage('BatchEditor', 'edit');
-        wfLoadExtensionMessages('BatchEditor');
     }
 }
