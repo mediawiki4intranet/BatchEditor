@@ -48,6 +48,13 @@ $messages['en'] = array(
     'batcheditor-not-found'     => 'Article [[:$1|$1]] not found!',
     'batcheditor-edit-error'    => 'Editing failed',
     'batcheditor-edit-denied'   => 'You cannot edit this article.',
+    'batcheditor-page-summary'  => 'Batch edit: $1',
+    'logentry-batchedit-batchedit' => '$1: batch edit $3: $4',
+    'batcheditor-log-replace'   => 'replace $1 with $2',
+    'batcheditor-log-pcre'      => 'replace PCRE $1 with $2',
+    'batcheditor-log-del-pcre'  => 'remove PCRE $1',
+    'batcheditor-log-add'       => 'add $1',
+    'batcheditor-log-delete'    => 'remove $1',
 );
 $specialPageAliases['en'] = array(
     'BatchEditor' => array('BatchEditor'),
@@ -75,8 +82,15 @@ $messages['ru'] = array(
     'batcheditor-results-page'  => "= '''Результаты''' =",
     'batcheditor-not-found'     => 'Статья [[:$1|$1]] не существует!',
     'batcheditor-edit-error'    => 'Ошибка редактирования',
-    'batcheditor-edit-denied'   => 'Вам запрещено редактировать эту статью.'
+    'batcheditor-edit-denied'   => 'Вам запрещено редактировать эту статью.',
+    'batcheditor-page-summary'  => 'Массовая правка: $1',
+    'logentry-batchedit-batchedit' => '$1: массовая правка $3: $4',
+    'batcheditor-log-replace'   => 'замена $1 на $2',
+    'batcheditor-log-pcre'      => 'замена PCRE $1 на $2',
+    'batcheditor-log-del-pcre'  => 'удаление PCRE $1',
+    'batcheditor-log-add'       => 'добавление $1',
+    'batcheditor-log-delete'    => 'удаление $1',
 );
 $specialPageAliases['ru'] = array(
-    'BatchEditor' => array('BatchEditor', 'МассоваяПравка'),
+    'BatchEditor' => array('BatchEditor', 'Массовая Правка'),
 );

@@ -14,9 +14,10 @@
 if (!defined('MEDIAWIKI'))
     die('Not an entry point');
 
-$wgExtensionMessagesFiles['BatchEditor'] = dirname(__FILE__) . '/BatchEditor.i18n.php';
+$wgExtensionMessagesFiles['BatchEditor'] = __DIR__ . '/BatchEditor.i18n.php';
 $wgSpecialPageGroups['BatchEditor'] = 'pagetools';
 $wgSpecialPages['BatchEditor'] = 'BatchEditorPage';
+$wgLogActionsHandlers['batchedit/batchedit'] = 'BatchEditLogFormatter';
 
 function wfSpecialBatchEditor($par = null)
 {
@@ -39,7 +40,7 @@ function wfSpecialBatchEditor($par = null)
     $a_one    = $wgRequest->getCheck('a_one') ? ' checked="checked" ' : false;
 
     /* Is Mediawiki4Intranet Import/Export engine available? */
-    require_once("$IP/includes/specials/SpecialExport.php");
+    class_exists('SpecialExport');
     $mw4i_addpages = NULL;
     if (function_exists('wfExportAddPagesExec'))
         $mw4i_addpages = array('wfExportAddPagesExec', 'wfExportAddPagesForm');
@@ -65,7 +66,7 @@ function wfSpecialBatchEditor($par = null)
 
     ob_start();
 ?>
-<form action='<?=$action?>' method='POST'>
+<form action=<?="'$action'"?> method='POST'>
 <table>
 <tr valign="top">
     <td style="vertical-align: top; padding-right: 20px"><?=wfMsgExt('batcheditor-list-title', array('parseinline'))?></td>
@@ -75,7 +76,7 @@ function wfSpecialBatchEditor($par = null)
 <tr valign="top">
     <td><?=wfMsgExt('batcheditor-comment-title', array('parseinline'))?></td>
     <td>
-        <input name="a_comment" style="width: 100%" value="<?=htmlspecialchars($a_comment)?>" /><br />
+        <input name="a_comment" style="width: 100%" value=<?='"'.htmlspecialchars($a_comment).'"'?> /><br />
         <input type="checkbox" name="a_minor" id="a_minor" <?=$a_minor?> value="1"/><label for="a_minor"><?=wfMsg('minoredit')?></label>
         <input type="checkbox" name="a_create" id="a_create" <?=$a_create?> value="1"/><label for="a_create"><?=wfMsg('batcheditor-create')?></label>
     </td>
@@ -112,8 +113,8 @@ function wfSpecialBatchEditor($par = null)
     <td><textarea name="a_delete" rows="5" cols="45"><?=htmlspecialchars($a_delete)?></textarea></td>
 </tr>
 <tr><td align="center" colspan="2">
-    <input name='a_preview' value='<?=wfMsgExt('batcheditor-preview', array('parseinline'))?>' type='submit' /> &nbsp; &nbsp;
-    <input name='a_run' value='<?=wfMsgExt('batcheditor-run', array('parseinline'))?>' type='submit' /> &nbsp; &nbsp;
+    <input name='a_preview' value=<?='"'.wfMsgExt('batcheditor-preview', array('parseinline')).'"'?> type='submit' /> &nbsp; &nbsp;
+    <input name='a_run' value=<?='"'.wfMsgExt('batcheditor-run', array('parseinline')).'"'?> type='submit' /> &nbsp; &nbsp;
 </td></tr>
 </table>
 
@@ -142,6 +143,13 @@ function wfSpecialBatchEditor($par = null)
         $af = explode("\n", $a_find);
         $ar = explode("\n", $a_replace);
     }
+    # Save params
+    $log_params = array(
+        'replace' => array(),
+        'regexp' => $a_regexp && true,
+        'add' => $a_add,
+        'delete' => $a_delete,
+    );
     # Replacements
     $a_find = array();
     foreach ($af as $a => $f)
@@ -149,9 +157,11 @@ function wfSpecialBatchEditor($par = null)
         $f = trim($f);
         if ($f)
         {
+            $repl = isset($ar[$a]) ? $ar[$a] : '';
+            $log_params['replace'][] = array($f, $repl);
             if ($a_regexp)
                 $f = '#'.str_replace('#', "\\#", $f).'#'.($a_one ? 's' : '');
-            $a_find[] = array($f, $ar[$a]);
+            $a_find[] = array($f, $repl);
         }
     }
     # Regexps for deleting whole lines
@@ -198,7 +208,7 @@ function wfSpecialBatchEditor($par = null)
             if (count($a_delete))
                 foreach ($a_delete as $s)
                     $newtext = preg_replace($s, "", $newtext);
-            if (@trim($a_add))
+            if (trim($a_add))
                 $newtext .= "\n" . $a_add;
             # Preview or run only if new text differs
             if ($newtext != $oldtext)
@@ -212,15 +222,30 @@ function wfSpecialBatchEditor($par = null)
                 $wgOut->addWikiText("== [[:$s_title]] ==");
                 $canedit = $article->getTitle()->userCan('edit');
                 if (!$canedit)
+                {
                     $wgOut->addWikiText('<div style="color:red">\'\'\''.wfMsg('batcheditor-edit-denied').'\'\'\'</div>');
+                }
                 elseif ($a_run)
                 {
                     $flags = EDIT_DEFER_UPDATES | EDIT_AUTOSUMMARY;
                     if ($a_minor)
                         $flags |= EDIT_MINOR;
                     $st = false;
-                    if (($st = $article->doEdit($newtext, $a_comment, $flags)) && $st->isGood())
+                    $comment = $a_comment;
+                    if ($comment === '')
+                    {
+                        $comment = wfMsgNoTrans('batcheditor-page-summary', BatchEditLogFormatter::getBatchEditActions($log_params));
+                    }
+                    if (($st = $article->doEdit($newtext, $comment, $flags)) && $st->isGood())
+                    {
+                        $entry = new ManualLogEntry('batchedit', 'batchedit');
+                        $entry->setTarget($title);
+                        $entry->setParameters($log_params);
+                        $entry->setPerformer($wgUser);
+                        $logid = $entry->insert();
+                        $entry->publish($logid, 'udp');
                         $newrev = wfMsgHTML('currentrev-asof', $wgLang->timeanddate($st->value['revision']->getTimestamp(), true));
+                    }
                     else
                     {
                         $msg = wfMsg('batcheditor-edit-error');
@@ -259,5 +284,41 @@ class BatchEditorPage extends SpecialPage
     function BatchEditorPage()
     {
         SpecialPage::SpecialPage('BatchEditor', 'edit');
+    }
+}
+
+class BatchEditLogFormatter extends LogFormatter
+{
+    public static function getBatchEditActions($params)
+    {
+        $actions = array();
+        foreach ($params['replace'] as $r)
+        {
+            if ($r[1] === '')
+            {
+                $t = $params['regexp'] ? 'del-pcre' : 'delete';
+            }
+            else
+            {
+                $t = $params['regexp'] ? 'pcre' : 'replace';
+            }
+            $actions[] = wfMsgNoTrans('batcheditor-log-'.$t, $r[0], $r[1]);
+        }
+        if ($params['add'] !== '')
+        {
+            $actions[] = wfMsgNoTrans('batcheditor-log-add', $params['add']);
+        }
+        if ($params['delete'] !== '')
+        {
+            $actions[] = wfMsgNoTrans('batcheditor-log-delete', $params['delete']);
+        }
+        return implode(', ', $actions);
+    }
+
+    protected function getMessageParameters()
+    {
+        $res = parent::getMessageParameters();
+        $res[] = self::getBatchEditActions($this->entry->getParameters());
+        return $res;
     }
 }
