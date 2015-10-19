@@ -16,14 +16,18 @@ if (!defined('MEDIAWIKI'))
 
 class BatchEditorPage extends SpecialPage
 {
-    function BatchEditorPage()
+    function __construct()
     {
-        SpecialPage::SpecialPage('BatchEditor', 'edit');
+        parent::__construct('BatchEditor', 'edit');
     }
 
     function execute($par = null)
     {
         global $wgOut, $wgRequest, $wgTitle, $wgUser, $wgLang, $IP, $wgScriptPath, $wgVersion;
+
+        if ($wgOut->getResourceLoader()->getModule('mediawiki.pageselector'))
+            $wgOut->addModules('mediawiki.pageselector');
+        $wgOut->addModules('ext.BatchEditor');
 
         $wgOut->setPageTitle(wfMsg('batcheditor-title'));
 
@@ -64,11 +68,11 @@ class BatchEditorPage extends SpecialPage
 
         $parserOptions = ParserOptions::newFromUser( $wgUser );
         $numSessionID = preg_replace( "[\D]", "", session_id() );
-        $action = $wgTitle->escapeLocalUrl("");
+        $action = $wgTitle->getLocalUrl("");
 
         ob_start();
 ?>
-<form action=<?="'$action'"?> method='POST'>
+<form action=<?="'$action'"?> method='POST' class="mw-batcheditor">
 <table>
 <tr valign="top">
     <td style="vertical-align: top; padding-right: 20px"><?=wfMsgExt('batcheditor-list-title', array('parseinline'))?></td>
@@ -127,7 +131,6 @@ class BatchEditorPage extends SpecialPage
 <?php
         $interface_form = ob_get_contents();
         ob_end_clean();
-        $wgOut->addExtensionStyle($wgScriptPath . '/extensions/BatchEditor/BatchEditor.css');
         $wgOut->addHTML($interface_form);
         # Remove CRLF
         $a_find    = str_replace("\r", "", $a_find);
@@ -186,7 +189,7 @@ class BatchEditorPage extends SpecialPage
             {
                 $s_title = trim($s_title);
                 $title = Title::newFromText($s_title);
-                if (!$title || !$title->userCanRead())
+                if (!$title || !$title->userCan('read'))
                     continue;
                 $article = new Article($title);
                 $oldtext = '';

@@ -23,8 +23,15 @@ $wgAutoloadClasses['BatchEditLogFormatter'] = __DIR__ . '/BatchEditor.class.php'
 
 $wgExtensionCredits['other'][] = array(
     'name'           => 'BatchEditor',
-    'version'        => '2014-02-06',
+    'version'        => '2015-10-19',
     'author'         => 'Stas Fomin, Vitaliy Filippov',
     'url'            => 'http://wiki.4intra.net/BatchEditor',
     'description'    => 'Batch editor for MediaWiki articles',
+);
+
+$wgResourceModules['ext.BatchEditor'] = array(
+    'localBasePath' => __DIR__,
+    'remoteExtPath' => 'BatchEditor',
+    'styles' => 'BatchEditor.css',
+    'position' => 'top',
 );
