@@ -21,6 +21,11 @@ class BatchEditorPage extends SpecialPage
         parent::__construct('BatchEditor', 'edit');
     }
 
+    protected function getGroupName()
+    {
+        return 'pagetools';
+    }
+
     function execute($par = null)
     {
         global $wgOut, $wgRequest, $wgTitle, $wgUser, $wgLang, $IP, $wgScriptPath, $wgVersion;
